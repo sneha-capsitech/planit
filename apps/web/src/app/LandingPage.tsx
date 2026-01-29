@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, useAnimationControls, type Variants } from 'framer-motion';
 
 const IconSparkle = (props: React.SVGProps<SVGSVGElement>) => (
@@ -21,7 +22,13 @@ const IconSparkle = (props: React.SVGProps<SVGSVGElement>) => (
 const IconArrowRight = (props: React.SVGProps<SVGSVGElement>) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" {...props}>
     <path d="M5 12h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    <path d="M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M13 6l6 6-6 6"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -63,8 +70,18 @@ const IconPin = (props: React.SVGProps<SVGSVGElement>) => (
 
 const IconClock = (props: React.SVGProps<SVGSVGElement>) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" {...props}>
-    <path d="M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10Z" stroke="currentColor" strokeWidth="1.7" />
-    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10Z"
+      stroke="currentColor"
+      strokeWidth="1.7"
+    />
+    <path
+      d="M12 6v6l4 2"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -199,12 +216,6 @@ const StepCard = ({
   </motion.div>
 );
 
-/**
- * ✅ Always visible (no initial fade)
- * ✅ Draggable only around its original location
- * ✅ Snaps back to original spot on release
- * ✅ Keeps soft idle floating by rotating slightly
- */
 const FloatingNote = ({
   className,
   floatDelay = 0,
@@ -250,9 +261,10 @@ const FloatingNote = ({
 };
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="lp">
-      {/* HERO */}
       <section className="hero">
         <div className="hero-bg">
           <FloatingNote className="note note--yellow" rotate={-10} floatDelay={0} />
@@ -278,14 +290,24 @@ export default function LandingPage() {
           </motion.p>
 
           <motion.div className="hero-actions" variants={reveal} initial="hidden" animate="show" custom={0.18}>
-            <motion.button className="btn btn-primary" whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
+            <motion.button
+              className="btn btn-primary"
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/auth/sign-up')}
+            >
               <span>Get Started</span>
               <span className="btn-ic">
                 <IconArrowRight />
               </span>
             </motion.button>
 
-            <motion.button className="btn btn-secondary" whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
+            <motion.button
+              className="btn btn-secondary"
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/auth/sign-in')}
+            >
               <span>Live Demo</span>
               <span className="btn-ic">
                 <IconCalendar />
@@ -301,14 +323,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* WHAT IS */}
       <section className="section">
         <div className="container">
           <div className="section-head">
-            <motion.h2 className="h2" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0}>
+            <motion.h2
+              className="h2"
+              variants={reveal}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0}
+            >
               What is PlanIt?
             </motion.h2>
-            <motion.p className="muted" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0.08}>
+            <motion.p
+              className="muted"
+              variants={reveal}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0.08}
+            >
               Your thoughts, organized. Your time, respected.
             </motion.p>
           </div>
@@ -322,10 +357,24 @@ export default function LandingPage() {
           <div className="spacer-64" />
 
           <div className="section-head">
-            <motion.h2 className="h2" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0}>
+            <motion.h2
+              className="h2"
+              variants={reveal}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0}
+            >
               Everything you need
             </motion.h2>
-            <motion.p className="muted" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0.08}>
+            <motion.p
+              className="muted"
+              variants={reveal}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0.08}
+            >
               Powerful features wrapped in a calm, beautiful interface.
             </motion.p>
           </div>
@@ -341,14 +390,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
       <section className="section section-soft">
         <div className="container">
           <div className="section-head">
-            <motion.h2 className="h2" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0}>
+            <motion.h2
+              className="h2"
+              variants={reveal}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0}
+            >
               How it works
             </motion.h2>
-            <motion.p className="muted" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0.08}>
+            <motion.p
+              className="muted"
+              variants={reveal}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.4 }}
+              custom={0.08}
+            >
               Three simple steps to organized productivity.
             </motion.p>
           </div>
@@ -356,7 +418,13 @@ export default function LandingPage() {
           <div className="steps-wrap">
             <div className="steps-line" />
             <div className="steps">
-              <StepCard n="01" delay={0.05} icon={<span className="step-icBox step-icBox--amber">+</span>} title="Add a note" desc="Click the + button and jot down your thought, task, or idea." />
+              <StepCard
+                n="01"
+                delay={0.05}
+                icon={<span className="step-icBox step-icBox--amber">+</span>}
+                title="Add a note"
+                desc="Click the + button and jot down your thought, task, or idea."
+              />
               <StepCard
                 n="02"
                 delay={0.12}
@@ -369,11 +437,16 @@ export default function LandingPage() {
                 title="Assign a date"
                 desc="Pick a due date or reminder time if you need one."
               />
-              <StepCard n="03" delay={0.18} icon={<span className="step-icBox step-icBox--mint">🔔</span>} title="Get reminded" desc="PlanIt keeps track so you can focus on what matters." />
+              <StepCard
+                n="03"
+                delay={0.18}
+                icon={<span className="step-icBox step-icBox--mint">🔔</span>}
+                title="Get reminded"
+                desc="PlanIt keeps track so you can focus on what matters."
+              />
             </div>
           </div>
 
-          {/* FOOTER */}
           <footer className="footer">
             <div className="footer-top">
               <div className="footer-brand">
@@ -408,9 +481,15 @@ export default function LandingPage() {
             <div className="footer-bottom">
               <div className="footer-made">Made with ❤️ by the PlanIt team</div>
               <div className="footer-icons">
-                <a href="#" aria-label="Twitter" className="footer-ic">𝕏</a>
-                <a href="#" aria-label="GitHub" className="footer-ic">⌂</a>
-                <a href="#" aria-label="LinkedIn" className="footer-ic">in</a>
+                <a href="#" aria-label="Twitter" className="footer-ic">
+                  𝕏
+                </a>
+                <a href="#" aria-label="GitHub" className="footer-ic">
+                  ⌂
+                </a>
+                <a href="#" aria-label="LinkedIn" className="footer-ic">
+                  in
+                </a>
               </div>
             </div>
           </footer>
