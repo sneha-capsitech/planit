@@ -9,7 +9,9 @@ import {
   FiChevronDown,
   FiX,
 } from 'react-icons/fi';
-import { BsPinAngle, BsPencil, BsTrash } from 'react-icons/bs';
+import { BsPinAngle, BsPencil, BsTrash} from 'react-icons/bs';
+import { FiMoon } from 'react-icons/fi';
+
 import '../../styles/notesboard.css';
 
 type Priority = 'low' | 'medium' | 'high';
@@ -195,7 +197,9 @@ export default function NotesBoardPage() {
         </div>
 
         <div className="nb-top-actions">
-          <button className="nb-icon-btn" title="Theme">🌙</button>
+<button className="nb-icon-btn" title="Theme" aria-label="Theme">
+  <FiMoon size={18} />
+</button>
           <button className="nb-primary-btn" onClick={openNew}>
             <FiPlus /> Add Note
           </button>

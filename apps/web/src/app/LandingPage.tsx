@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useAnimationControls, type Variants } from 'framer-motion';
+import Orb from '../components/Orb/Orb';
 import '../styles/landing.css';
 
 const IconSparkle = (props: React.SVGProps<SVGSVGElement>) => (
@@ -266,15 +267,30 @@ export default function LandingPage() {
 
   return (
     <div className="lp">
-      <section className="hero">
-        <div className="hero-bg">
+      {/* HERO */}
+      <section className="hero" style={{ position: 'relative' }}>
+        {/* ✅ ORB animation behind everything */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          <Orb hoverIntensity={2} rotateOnHover hue={0} forceHoverState={false} backgroundColor="#000000" />
+        </div>
+
+        {/* floating notes above orb */}
+        <div className="hero-bg" style={{ zIndex: 1, position: 'absolute', inset: 0 }}>
           <FloatingNote className="note note--yellow" rotate={-10} floatDelay={0} />
           <FloatingNote className="note note--purple" rotate={10} floatDelay={0.2} />
           <FloatingNote className="note note--mint" rotate={-6} floatDelay={0.1} />
           <FloatingNote className="note note--blue" rotate={8} floatDelay={0.28} />
         </div>
 
-        <div className="container hero-inner">
+        {/* content above everything */}
+        <div className="container hero-inner" style={{ position: 'relative', zIndex: 2 }}>
           <motion.div className="badge" variants={reveal} initial="hidden" animate="show" custom={0}>
             <span className="badge-ic">
               <IconSparkle />
@@ -324,27 +340,14 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* WHAT IS */}
       <section className="section">
         <div className="container">
           <div className="section-head">
-            <motion.h2
-              className="h2"
-              variants={reveal}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              custom={0}
-            >
+            <motion.h2 className="h2" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0}>
               What is PlanIt?
             </motion.h2>
-            <motion.p
-              className="muted"
-              variants={reveal}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              custom={0.08}
-            >
+            <motion.p className="muted" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0.08}>
               Your thoughts, organized. Your time, respected.
             </motion.p>
           </div>
@@ -358,24 +361,10 @@ export default function LandingPage() {
           <div className="spacer-64" />
 
           <div className="section-head">
-            <motion.h2
-              className="h2"
-              variants={reveal}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              custom={0}
-            >
+            <motion.h2 className="h2" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0}>
               Everything you need
             </motion.h2>
-            <motion.p
-              className="muted"
-              variants={reveal}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              custom={0.08}
-            >
+            <motion.p className="muted" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0.08}>
               Powerful features wrapped in a calm, beautiful interface.
             </motion.p>
           </div>
@@ -391,27 +380,14 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* HOW IT WORKS */}
       <section className="section section-soft">
         <div className="container">
           <div className="section-head">
-            <motion.h2
-              className="h2"
-              variants={reveal}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              custom={0}
-            >
+            <motion.h2 className="h2" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0}>
               How it works
             </motion.h2>
-            <motion.p
-              className="muted"
-              variants={reveal}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.4 }}
-              custom={0.08}
-            >
+            <motion.p className="muted" variants={reveal} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }} custom={0.08}>
               Three simple steps to organized productivity.
             </motion.p>
           </div>
@@ -419,13 +395,7 @@ export default function LandingPage() {
           <div className="steps-wrap">
             <div className="steps-line" />
             <div className="steps">
-              <StepCard
-                n="01"
-                delay={0.05}
-                icon={<span className="step-icBox step-icBox--amber">+</span>}
-                title="Add a note"
-                desc="Click the + button and jot down your thought, task, or idea."
-              />
+              <StepCard n="01" delay={0.05} icon={<span className="step-icBox step-icBox--amber">+</span>} title="Add a note" desc="Click the + button and jot down your thought, task, or idea." />
               <StepCard
                 n="02"
                 delay={0.12}
@@ -438,16 +408,11 @@ export default function LandingPage() {
                 title="Assign a date"
                 desc="Pick a due date or reminder time if you need one."
               />
-              <StepCard
-                n="03"
-                delay={0.18}
-                icon={<span className="step-icBox step-icBox--mint">🔔</span>}
-                title="Get reminded"
-                desc="PlanIt keeps track so you can focus on what matters."
-              />
+              <StepCard n="03" delay={0.18} icon={<span className="step-icBox step-icBox--mint">🔔</span>} title="Get reminded" desc="PlanIt keeps track so you can focus on what matters." />
             </div>
           </div>
 
+          {/* Footer */}
           <footer className="footer">
             <div className="footer-top">
               <div className="footer-brand">
@@ -482,15 +447,9 @@ export default function LandingPage() {
             <div className="footer-bottom">
               <div className="footer-made">Made with ❤️ by the PlanIt team</div>
               <div className="footer-icons">
-                <a href="#" aria-label="Twitter" className="footer-ic">
-                  𝕏
-                </a>
-                <a href="#" aria-label="GitHub" className="footer-ic">
-                  ⌂
-                </a>
-                <a href="#" aria-label="LinkedIn" className="footer-ic">
-                  in
-                </a>
+                <a href="#" aria-label="Twitter" className="footer-ic">𝕏</a>
+                <a href="#" aria-label="GitHub" className="footer-ic">⌂</a>
+                <a href="#" aria-label="LinkedIn" className="footer-ic">in</a>
               </div>
             </div>
           </footer>
