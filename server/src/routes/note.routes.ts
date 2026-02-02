@@ -5,6 +5,12 @@ import { Note } from '../models/Note';
 const r = Router();
 r.use(requireAuth);
 
+/**
+ * ✅ GET notes
+ * - pinned first
+ * - then order (for trello-like sorting)
+ * - fallback updatedAt
+ */
 r.get('/', async (req: AuthedRequest, res) => {
   const userId = req.userId!;
   const q = String(req.query.q ?? '').trim();
@@ -12,10 +18,34 @@ r.get('/', async (req: AuthedRequest, res) => {
   const filter: any = { userId };
   if (q) filter.$or = [{ title: { $regex: q, $options: 'i' } }, { body: { $regex: q, $options: 'i' } }];
 
-  const notes = await Note.find(filter).sort({ pinned: -1, updatedAt: -1 }).limit(500);
+  const notes = await Note.find(filter).sort({ pinned: -1, order: 1, updatedAt: -1 }).limit(500);
   res.json({ notes });
 });
 
+/**
+ * ✅ Reorder notes (drag & drop)
+ * Body: { orderIds: string[] }
+ */
+r.patch('/reorder', async (req: AuthedRequest, res) => {
+  const userId = req.userId!;
+  const orderIds: string[] = Array.isArray(req.body?.orderIds) ? req.body.orderIds : [];
+
+  if (!orderIds.length) return res.status(400).json({ message: 'orderIds required' });
+
+  const ops = orderIds.map((id, idx) => ({
+    updateOne: {
+      filter: { _id: id, userId },
+      update: { $set: { order: idx } },
+    },
+  }));
+
+  await Note.bulkWrite(ops);
+  res.json({ ok: true });
+});
+
+/**
+ * ✅ Create note
+ */
 r.post('/', async (req: AuthedRequest, res) => {
   const userId = req.userId!;
   const title = String(req.body?.title ?? '').trim();
@@ -26,6 +56,9 @@ r.post('/', async (req: AuthedRequest, res) => {
   const color = (req.body?.color ?? 'yellow') as 'yellow' | 'purple' | 'mint' | 'blue' | 'peach';
   const tags = Array.isArray(req.body?.tags) ? req.body.tags.map((t: any) => String(t).trim()).filter(Boolean) : [];
   const pinned = !!req.body?.pinned;
+
+  // default order to last
+  const order = typeof req.body?.order === 'number' ? req.body.order : Date.now();
 
   if (!title) return res.status(400).json({ message: 'Title required' });
 
@@ -40,11 +73,15 @@ r.post('/', async (req: AuthedRequest, res) => {
     color,
     tags,
     pinned,
+    order,
   });
 
   res.status(201).json({ note });
 });
 
+/**
+ * ✅ Update note
+ */
 r.patch('/:id', async (req: AuthedRequest, res) => {
   const userId = req.userId!;
   const { id } = req.params;
@@ -58,6 +95,8 @@ r.patch('/:id', async (req: AuthedRequest, res) => {
 
   if (req.body?.color !== undefined) update.color = req.body.color;
   if (req.body?.pinned !== undefined) update.pinned = !!req.body.pinned;
+  if (req.body?.order !== undefined && typeof req.body.order === 'number') update.order = req.body.order;
+
   if (req.body?.tags !== undefined) {
     update.tags = Array.isArray(req.body.tags) ? req.body.tags.map((t: any) => String(t).trim()).filter(Boolean) : [];
   }
@@ -68,6 +107,9 @@ r.patch('/:id', async (req: AuthedRequest, res) => {
   res.json({ note });
 });
 
+/**
+ * ✅ Delete note
+ */
 r.delete('/:id', async (req: AuthedRequest, res) => {
   const userId = req.userId!;
   const { id } = req.params;

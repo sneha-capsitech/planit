@@ -15,7 +15,7 @@ export interface INote {
   color: NoteColor;
   tags: string[];
   pinned: boolean;
-
+order:number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,8 +28,7 @@ const NoteSchema = new Schema<INote>(
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
     dueAt: { type: Date, default: null },
     completed: { type: Boolean, default: false },
-
-    // ✅ new
+    order: { type: Number, default: 0 },
     color: { type: String, enum: ['yellow', 'purple', 'mint', 'blue', 'peach'], default: 'yellow' },
     tags: { type: [String], default: [] },
     pinned: { type: Boolean, default: false },

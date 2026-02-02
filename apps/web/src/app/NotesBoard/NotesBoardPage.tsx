@@ -8,9 +8,26 @@ import {
   FiFilter,
   FiChevronDown,
   FiX,
+  FiMoon,
 } from 'react-icons/fi';
-import { BsPinAngle, BsPencil, BsTrash} from 'react-icons/bs';
-import { FiMoon } from 'react-icons/fi';
+import { BsPinAngle, BsPencil, BsTrash } from 'react-icons/bs';
+import { motion } from 'framer-motion';
+
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import '../../styles/notesboard.css';
 
@@ -27,6 +44,7 @@ type Note = {
   color: NoteColor;
   tags: string[];
   pinned: boolean;
+  order?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -51,6 +69,79 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+/** ✅ Sortable Note Card (Trello-like) */
+function SortableNoteCard({
+  n,
+  onPin,
+  onEdit,
+  onDelete,
+}: {
+  n: Note;
+  onPin: (n: Note) => void;
+  onEdit: (n: Note) => void;
+  onDelete: (n: Note) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: n._id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : undefined,
+  };
+
+  return (
+    <motion.div
+      ref={setNodeRef}
+      style={style}
+      layout
+      className={`nb-note ${COLOR_OPTIONS.find((x) => x.key === n.color)?.css ?? 'nb-color-yellow'} ${isDragging ? 'nb-note-dragging' : ''}`}
+    >
+      {/* drag handle is top area */}
+      <div className="nb-note-top" {...attributes} {...listeners}>
+        <div className="nb-note-title">
+          <span className={n.completed ? 'nb-strike' : ''}>{n.title}</span>
+          <div className="nb-note-sub">{n.body}</div>
+        </div>
+
+        <div className="nb-check" title="Drag">
+          <span>⋮⋮</span>
+        </div>
+      </div>
+
+      <div className="nb-divider" />
+
+      <div className="nb-tags">
+        {(n.tags ?? []).slice(0, 3).map((t) => (
+          <span key={t} className="nb-tag">
+            #{t}
+          </span>
+        ))}
+      </div>
+
+      <div className="nb-note-footer">
+        <span className={`nb-priority nb-priority-${n.priority}`}>{n.priority}</span>
+
+        {n.dueAt ? <span className="nb-date">📅 {formatDate(n.dueAt)}</span> : <span />}
+
+        {/* hover actions */}
+        <div className="nb-actions">
+          <button className="nb-act" title="Pin" onClick={() => onPin(n)}>
+            <BsPinAngle />
+          </button>
+          <button className="nb-act" title="Edit" onClick={() => onEdit(n)}>
+            <BsPencil />
+          </button>
+          <button className="nb-act nb-danger" title="Delete" onClick={() => onDelete(n)}>
+            <BsTrash />
+          </button>
+        </div>
+      </div>
+
+      {n.pinned ? <div className="nb-pin-dot">📌</div> : null}
+    </motion.div>
+  );
+}
+
 export default function NotesBoardPage() {
   const [q, setQ] = React.useState('');
   const [notes, setNotes] = React.useState<Note[]>([]);
@@ -68,6 +159,9 @@ export default function NotesBoardPage() {
   const [dueAt, setDueAt] = React.useState<string>('');
   const [tagInput, setTagInput] = React.useState('');
   const [tags, setTags] = React.useState<string[]>([]);
+
+  // DnD sensors (prevents accidental drag on click)
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   async function load() {
     setLoading(true);
@@ -145,8 +239,10 @@ export default function NotesBoardPage() {
           dueAt: dueAt ? new Date(dueAt).toISOString() : null,
           tags,
           pinned: false,
+          // order will be set in backend
         }),
       });
+
       setNotes((p) => [out.note, ...p]);
       setModalOpen(false);
       return;
@@ -181,6 +277,38 @@ export default function NotesBoardPage() {
     setNotes((p) => p.filter((x) => x._id !== n._id));
   }
 
+  // ✅ Persist order (debounced)
+  const persistTimer = React.useRef<number | null>(null);
+  const persistOrder = (next: Note[]) => {
+    if (persistTimer.current) window.clearTimeout(persistTimer.current);
+    persistTimer.current = window.setTimeout(async () => {
+      try {
+        await api<{ ok: boolean }>(`/api/notes/reorder`, {
+          method: 'PATCH',
+          body: JSON.stringify({ orderIds: next.map((x) => x._id) }),
+        });
+      } catch {
+        // optional toast
+      }
+    }, 250);
+  };
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id === over.id) return;
+
+    setNotes((prev) => {
+      const oldIndex = prev.findIndex((x) => x._id === String(active.id));
+      const newIndex = prev.findIndex((x) => x._id === String(over.id));
+      if (oldIndex < 0 || newIndex < 0) return prev;
+
+      const next = arrayMove(prev, oldIndex, newIndex);
+      persistOrder(next);
+      return next;
+    });
+  };
+
   const count = notes.length;
 
   return (
@@ -189,20 +317,18 @@ export default function NotesBoardPage() {
       <header className="nb-topbar">
         <div className="nb-top-search">
           <FiSearch />
-          <input
-            placeholder="Search notes..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <input placeholder="Search notes..." value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
 
         <div className="nb-top-actions">
-<button className="nb-icon-btn" title="Theme" aria-label="Theme">
-  <FiMoon size={18} />
-</button>
+          <button className="nb-icon-btn" title="Theme" aria-label="Theme">
+            <FiMoon size={18} />
+          </button>
+
           <button className="nb-primary-btn" onClick={openNew}>
             <FiPlus /> Add Note
           </button>
+
           <button
             className="nb-icon-btn"
             title="Logout"
@@ -223,7 +349,7 @@ export default function NotesBoardPage() {
           <p>Your thoughts, organized your way</p>
         </div>
 
-        {/* Toolbar row */}
+        {/* Toolbar */}
         <div className="nb-toolbar">
           <div className="nb-pill">{count} notes</div>
           <button className="nb-icon-pill" type="button">
@@ -247,27 +373,26 @@ export default function NotesBoardPage() {
         </div>
 
         {/* Notes */}
-        <div className={view === 'grid' ? 'nb-grid' : 'nb-list'}>
-          {loading ? (
-            <div className="nb-empty">Loading…</div>
-          ) : notes.length === 0 ? (
-            <div className="nb-empty">No notes yet.</div>
-          ) : (
-            notes.map((n) => (
-              <div key={n._id} className={`nb-note ${COLOR_OPTIONS.find(x => x.key === n.color)?.css ?? 'nb-color-yellow'}`}>
+        {loading ? (
+          <div className="nb-empty">Loading…</div>
+        ) : notes.length === 0 ? (
+          <div className="nb-empty">No notes yet.</div>
+        ) : view === 'list' ? (
+          // list mode without drag (simple)
+          <div className="nb-list">
+            {notes.map((n) => (
+              <div key={n._id} className={`nb-note ${COLOR_OPTIONS.find((x) => x.key === n.color)?.css ?? 'nb-color-yellow'}`}>
                 <div className="nb-note-top">
                   <div className="nb-note-title">
                     <span className={n.completed ? 'nb-strike' : ''}>{n.title}</span>
                     <div className="nb-note-sub">{n.body}</div>
                   </div>
-
                   <div className="nb-check">
                     <span>✓</span>
                   </div>
                 </div>
 
                 <div className="nb-divider" />
-
                 <div className="nb-tags">
                   {(n.tags ?? []).slice(0, 3).map((t) => (
                     <span key={t} className="nb-tag">
@@ -278,31 +403,28 @@ export default function NotesBoardPage() {
 
                 <div className="nb-note-footer">
                   <span className={`nb-priority nb-priority-${n.priority}`}>{n.priority}</span>
-
-                  {n.dueAt ? (
-                    <span className="nb-date">📅 {formatDate(n.dueAt)}</span>
-                  ) : (
-                    <span />
-                  )}
-
-                  <div className="nb-actions">
-                    <button className="nb-act" title="Pin" onClick={() => togglePin(n)}>
-                      <BsPinAngle />
-                    </button>
-                    <button className="nb-act" title="Edit" onClick={() => openEdit(n)}>
-                      <BsPencil />
-                    </button>
-                    <button className="nb-act nb-danger" title="Delete" onClick={() => deleteNote(n)}>
-                      <BsTrash />
-                    </button>
+                  {n.dueAt ? <span className="nb-date">📅 {formatDate(n.dueAt)}</span> : <span />}
+                  <div className="nb-actions" style={{ opacity: 1, transform: 'none' }}>
+                    <button className="nb-act" title="Pin" onClick={() => togglePin(n)}><BsPinAngle /></button>
+                    <button className="nb-act" title="Edit" onClick={() => openEdit(n)}><BsPencil /></button>
+                    <button className="nb-act nb-danger" title="Delete" onClick={() => deleteNote(n)}><BsTrash /></button>
                   </div>
                 </div>
-
-                {n.pinned ? <div className="nb-pin-dot">📌</div> : null}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          // ✅ grid mode with Trello-like drag reorder
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={notes.map((n) => n._id)} strategy={rectSortingStrategy}>
+              <motion.div layout className="nb-grid">
+                {notes.map((n) => (
+                  <SortableNoteCard key={n._id} n={n} onPin={togglePin} onEdit={openEdit} onDelete={deleteNote} />
+                ))}
+              </motion.div>
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
 
       {/* Floating + */}
@@ -315,7 +437,7 @@ export default function NotesBoardPage() {
         <div className="nb-modal-overlay" onMouseDown={() => setModalOpen(false)}>
           <div className="nb-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="nb-modal-head">
-              <div className="nb-modal-title">New Note</div>
+              <div className="nb-modal-title">{editing ? 'Edit Note' : 'New Note'}</div>
               <button className="nb-close" onClick={() => setModalOpen(false)} title="Close">
                 <FiX />
               </button>
@@ -379,7 +501,9 @@ export default function NotesBoardPage() {
                     <label>Tags</label>
                     <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Add a tag..." />
                   </div>
-                  <button className="nb-addTag" onClick={addTag}>Add</button>
+                  <button className="nb-addTag" onClick={addTag}>
+                    Add
+                  </button>
                 </div>
 
                 {tags.length ? (
@@ -395,8 +519,12 @@ export default function NotesBoardPage() {
             </div>
 
             <div className="nb-modal-footer">
-              <button className="nb-btnGhost" onClick={() => setModalOpen(false)}>Cancel</button>
-              <button className="nb-btnPrimary" onClick={saveNote}>Create Note</button>
+              <button className="nb-btnGhost" onClick={() => setModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="nb-btnPrimary" onClick={saveNote}>
+                {editing ? 'Save' : 'Create Note'}
+              </button>
             </div>
           </div>
         </div>

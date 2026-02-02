@@ -488,3 +488,17 @@
   cursor:pointer;
 }
 .nb-btnPrimary:hover{ background:#111217; }
+.nb-note-dragging{
+  box-shadow: 0 30px 70px rgba(20,22,30,0.22) !important;
+  transform: rotate(1deg);
+  cursor: grabbing;
+}
+
+.nb-note-top{
+  cursor: grab; 
+}
+
+.nb-check span{
+  opacity: .55;
+  font-weight: 900;
+}

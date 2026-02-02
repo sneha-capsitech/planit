@@ -2,7 +2,7 @@ import React from 'react';
 import { api, clearToken } from '../../lib/auth/api';
 import '../../styles/dashboard.css';
 import { NavLink } from 'react-router-dom';
-
+import { FiMoon } from 'react-icons/fi';
 
 type Priority = 'low' | 'medium' | 'high';
 
@@ -146,9 +146,9 @@ export default function Dashboard() {
           </div>
 
           <div className="topActions">
-            <button className="iconBtn" aria-label="Theme" title="Theme">
-              🌙
-            </button>
+          <button className="nb-icon-btn" title="Theme" aria-label="Theme">
+            <FiMoon size={18} />
+          </button>
 
             <button className="addBtn" onClick={() => setCreating(true)}>
               ＋ Add Note
