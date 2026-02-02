@@ -12,7 +12,7 @@ r.get('/', async (req: AuthedRequest, res) => {
   const filter: any = { userId };
   if (q) filter.$or = [{ title: { $regex: q, $options: 'i' } }, { body: { $regex: q, $options: 'i' } }];
 
-  const notes = await Note.find(filter).sort({ updatedAt: -1 }).limit(200);
+  const notes = await Note.find(filter).sort({ pinned: -1, updatedAt: -1 }).limit(500);
   res.json({ notes });
 });
 
@@ -23,6 +23,10 @@ r.post('/', async (req: AuthedRequest, res) => {
   const priority = (req.body?.priority ?? 'medium') as 'low' | 'medium' | 'high';
   const dueAt = req.body?.dueAt ? new Date(req.body.dueAt) : null;
 
+  const color = (req.body?.color ?? 'yellow') as 'yellow' | 'purple' | 'mint' | 'blue' | 'peach';
+  const tags = Array.isArray(req.body?.tags) ? req.body.tags.map((t: any) => String(t).trim()).filter(Boolean) : [];
+  const pinned = !!req.body?.pinned;
+
   if (!title) return res.status(400).json({ message: 'Title required' });
 
   const note = await Note.create({
@@ -32,6 +36,10 @@ r.post('/', async (req: AuthedRequest, res) => {
     priority,
     dueAt,
     completed: false,
+
+    color,
+    tags,
+    pinned,
   });
 
   res.status(201).json({ note });
@@ -42,11 +50,17 @@ r.patch('/:id', async (req: AuthedRequest, res) => {
   const { id } = req.params;
 
   const update: any = {};
-  if (req.body?.title !== undefined) update.title = String(req.body.title);
+  if (req.body?.title !== undefined) update.title = String(req.body.title).trim();
   if (req.body?.body !== undefined) update.body = String(req.body.body);
   if (req.body?.priority !== undefined) update.priority = req.body.priority;
   if (req.body?.completed !== undefined) update.completed = !!req.body.completed;
   if (req.body?.dueAt !== undefined) update.dueAt = req.body.dueAt ? new Date(req.body.dueAt) : null;
+
+  if (req.body?.color !== undefined) update.color = req.body.color;
+  if (req.body?.pinned !== undefined) update.pinned = !!req.body.pinned;
+  if (req.body?.tags !== undefined) {
+    update.tags = Array.isArray(req.body.tags) ? req.body.tags.map((t: any) => String(t).trim()).filter(Boolean) : [];
+  }
 
   const note = await Note.findOneAndUpdate({ _id: id, userId }, update, { new: true });
   if (!note) return res.status(404).json({ message: 'Note not found' });

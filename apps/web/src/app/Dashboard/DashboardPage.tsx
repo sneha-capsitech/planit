@@ -1,6 +1,8 @@
 import React from 'react';
 import { api, clearToken } from '../../lib/auth/api';
 import '../../styles/dashboard.css';
+import { NavLink } from 'react-router-dom';
+
 
 type Priority = 'low' | 'medium' | 'high';
 
@@ -99,13 +101,34 @@ export default function Dashboard() {
           <div className="brandSub">Your calm workspace</div>
         </div>
 
-        <nav className="nav">
-          <button className="navItem navItemActive">Overview</button>
-          <button className="navItem">Notes Board</button>
-          <button className="navItem">Calendar</button>
-          <button className="navItem">Focus Mode</button>
-          <button className="navItem">Settings</button>
-        </nav>
+      <nav className="nav">
+  <NavLink
+    to="/dashboard"
+    className={({ isActive }) => (isActive ? 'navItem navItemActive' : 'navItem')}
+  >
+    Overview
+  </NavLink>
+
+  <NavLink
+    to="/notes-board"
+    className={({ isActive }) => (isActive ? 'navItem navItemActive' : 'navItem')}
+  >
+    Notes Board
+  </NavLink>
+
+  <NavLink to="/calendar" className="navItem">
+    Calendar
+  </NavLink>
+
+  <NavLink to="/focus" className="navItem">
+    Focus Mode
+  </NavLink>
+
+  <NavLink to="/settings" className="navItem">
+    Settings
+  </NavLink>
+</nav>
+
 
         <div className="tip">
           <div className="tipTitle">💡 Pro Tip</div>

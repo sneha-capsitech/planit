@@ -3,6 +3,8 @@ import LandingPage from './app/LandingPage';
 import SignInPage from './app/Auth/SignInPage';
 import SignUpPage from './app/Auth/SignUpPage';
 import DashboardPage from './app/Dashboard/DashboardPage';
+import NotesBoardPage from './app/NotesBoard/NotesBoardPage'; 
+
 import { getToken } from './lib/auth/api';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -26,6 +28,14 @@ export default function App() {
           </RequireAuth>
         }
       />
+      <Route
+  path="/notes-board"
+  element={
+    <RequireAuth>
+      <NotesBoardPage />
+    </RequireAuth>
+  }
+/>
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
