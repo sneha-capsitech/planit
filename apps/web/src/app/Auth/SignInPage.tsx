@@ -1,71 +1,51 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import AuthShell from './AuthShell';
-import { Divider, Field, GoogleButton, Icons, PrimaryButton } from './AuthUI';
-import { auth } from '../../lib/auth/AuthService';
+import { Divider, Field, PrimaryButton,Icons } from './AuthUI';
+import { api, setToken } from '../../lib/auth/api';
 
-function validateEmail(v: string): string {
-  const s = v.trim().toLowerCase();
-  if (!s) return 'Email is required.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return 'Enter a valid email.';
-  return '';
-}
-
-function validatePassword(v: string): string {
-  if (!v) return 'Password is required.';
-  return '';
-}
-
-export default function SignInPage(): JSX.Element {
-  const navigate = useNavigate();
-
+export default function SignInPage() {
+  const nav = useNavigate();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-
   const [touched, setTouched] = React.useState({ email: false, password: false });
   const [loading, setLoading] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
 
-  const emailError = touched.email ? validateEmail(email) : '';
-  const passwordError = touched.password ? validatePassword(password) : '';
+  const emailErr = touched.email && !email.trim() ? 'Email is required.' : '';
+  const passErr = touched.password && !password ? 'Password is required.' : '';
+const canSubmit = Boolean(email.trim() && password);
 
-  const canSubmit =
-    validateEmail(email) === '' && validatePassword(password) === '';
-
-  async function submit(): Promise<void> {
+  async function submit() {
     setTouched({ email: true, password: true });
     if (!canSubmit || loading) return;
 
     setLoading(true);
     setServerError(null);
-
     try {
-      await auth.signIn(email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      if (err instanceof Error) {
-        setServerError(err.message);
-      } else {
-        setServerError('Unexpected error occurred.');
-      }
+      const out = await api<{ token: string }>(`/api/auth/signin`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      setToken(out.token);
+      nav('/dashboard');
+    } catch (e) {
+      setServerError(e instanceof Error ? e.message : 'Failed');
     } finally {
       setLoading(false);
     }
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>): void {
-    if (e.key === 'Enter') submit();
-  }
-
   return (
     <AuthShell>
-      <div className="auth-form" onKeyDown={onKeyDown}>
-        <div className="auth-title">Welcome back</div>
-        <div className="auth-subtitle">
-          Sign in to continue to <span className="auth-accent">PlanIt</span>
+      <div className="authForm" onKeyDown={(e) => e.key === 'Enter' && submit()}>
+        <div className="authTitle">Welcome back</div>
+        <div className="authSubtitle">
+          Sign in to continue to <span className="authAccent">PlanIt</span>
         </div>
 
-        {serverError && <div className="auth-serverError">{serverError}</div>}
+        {serverError ? <div className="authServerError">{serverError}</div> : null}
 
         <Field
           label="Email"
@@ -73,9 +53,9 @@ export default function SignInPage(): JSX.Element {
           onChange={setEmail}
           placeholder="you@example.com"
           icon={Icons.mail}
-          error={emailError}
-          autoComplete="email"
+          error={emailErr}
           onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          autoComplete="email"
         />
 
         <Field
@@ -85,22 +65,48 @@ export default function SignInPage(): JSX.Element {
           placeholder="••••••••"
           type="password"
           icon={Icons.lock}
-          error={passwordError}
-          autoComplete="current-password"
+          error={passErr}
           onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          autoComplete="current-password"
         />
 
-        <PrimaryButton loading={loading} disabled={!canSubmit} onClick={submit}>
+        <PrimaryButton onClick={submit} loading={loading} disabled={!canSubmit}>
           Sign in
         </PrimaryButton>
 
         <Divider text="or continue with" />
 
-        <GoogleButton onClick={() => alert('Google OAuth later')} />
+        {/* ✅ Google OAuth (ID token -> backend -> your JWT -> dashboard) */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <GoogleLogin
+            onSuccess={async (cred) => {
+              try {
+                setServerError(null);
 
-        <div className="auth-bottomText">
+                const credential = cred.credential ?? '';
+                if (!credential) {
+                  setServerError('Google login failed: missing credential');
+                  return;
+                }
+
+                const out = await api<{ token: string }>(`/api/auth/google`, {
+                  method: 'POST',
+                  body: JSON.stringify({ credential }),
+                });
+
+                setToken(out.token);
+                nav('/dashboard');
+              } catch (e) {
+                setServerError(e instanceof Error ? e.message : 'Google sign-in failed');
+              }
+            }}
+            onError={() => setServerError('Google sign-in failed')}
+          />
+        </div>
+
+        <div className="authBottomText">
           Don&apos;t have an account?{' '}
-          <Link to="/auth/sign-up" className="auth-link">
+          <Link to="/auth/sign-up" className="authLink">
             Sign up
           </Link>
         </div>

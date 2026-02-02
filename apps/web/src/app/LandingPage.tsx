@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useAnimationControls, type Variants } from 'framer-motion';
+import '../styles/landing.css';
 
 const IconSparkle = (props: React.SVGProps<SVGSVGElement>) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" {...props}>

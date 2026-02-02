@@ -3,11 +3,11 @@ import LandingPage from './app/LandingPage';
 import SignInPage from './app/Auth/SignInPage';
 import SignUpPage from './app/Auth/SignUpPage';
 import DashboardPage from './app/Dashboard/DashboardPage';
-import { auth } from './lib/auth/AuthService';
+import { getToken } from './lib/auth/api';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const user = auth.getCurrentUser();
-  if (!user) return <Navigate to="/auth/sign-in" replace />;
+  const token = getToken();
+  if (!token) return <Navigate to="/auth/sign-in" replace />;
   return <>{children}</>;
 }
 
@@ -15,7 +15,6 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-
       <Route path="/auth/sign-in" element={<SignInPage />} />
       <Route path="/auth/sign-up" element={<SignUpPage />} />
 

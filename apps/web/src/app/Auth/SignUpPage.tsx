@@ -1,85 +1,51 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import AuthShell from './AuthShell';
-import { Divider, Field, GoogleButton, Icons, PrimaryButton } from './AuthUI';
-import { auth } from '../../lib/auth/AuthService';
+import { Divider, Field, PrimaryButton,Icons } from './AuthUI';
+import { api, setToken } from '../../lib/auth/api';
 
-function validateFullName(v: string): string {
-  if (!v.trim()) return 'Full name is required.';
-  if (v.trim().length < 2) return 'Full name is too short.';
-  return '';
-}
-
-function validateEmail(v: string): string {
-  const s = v.trim().toLowerCase();
-  if (!s) return 'Email is required.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return 'Enter a valid email.';
-  return '';
-}
-
-function validatePassword(v: string): string {
-  if (!v) return 'Password is required.';
-  if (v.length < 6) return 'Minimum 6 characters.';
-  return '';
-}
-
-export default function SignUpPage(): JSX.Element {
-  const navigate = useNavigate();
-
+export default function SignUpPage() {
+  const nav = useNavigate();
   const [fullName, setFullName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-
-  const [touched, setTouched] = React.useState({
-    fullName: false,
-    email: false,
-    password: false,
-  });
-
+  const [touched, setTouched] = React.useState({ fullName: false, email: false, password: false });
   const [loading, setLoading] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
 
-  const fullNameError = touched.fullName ? validateFullName(fullName) : '';
-  const emailError = touched.email ? validateEmail(email) : '';
-  const passwordError = touched.password ? validatePassword(password) : '';
+  const nErr = touched.fullName && fullName.trim().length < 2 ? 'Full name required.' : '';
+  const eErr = touched.email && !email.trim() ? 'Email required.' : '';
+  const pErr = touched.password && password.length < 6 ? 'Min 6 characters.' : '';
+  const canSubmit = fullName.trim().length >= 2 && !!email.trim() && password.length >= 6;
 
-  const canSubmit =
-    validateFullName(fullName) === '' &&
-    validateEmail(email) === '' &&
-    validatePassword(password) === '';
-
-  async function submit(): Promise<void> {
+  async function submit() {
     setTouched({ fullName: true, email: true, password: true });
     if (!canSubmit || loading) return;
 
     setLoading(true);
     setServerError(null);
-
     try {
-      await auth.signUp(fullName, email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      if (err instanceof Error) {
-        setServerError(err.message);
-      } else {
-        setServerError('Unexpected error occurred.');
-      }
+      const out = await api<{ token: string }>(`/api/auth/signup`, {
+        method: 'POST',
+        body: JSON.stringify({ fullName, email, password }),
+      });
+      setToken(out.token);
+      nav('/dashboard');
+    } catch (e) {
+      setServerError(e instanceof Error ? e.message : 'Failed');
     } finally {
       setLoading(false);
     }
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>): void {
-    if (e.key === 'Enter') submit();
-  }
-
   return (
     <AuthShell>
-      <div className="auth-form" onKeyDown={onKeyDown}>
-        <div className="auth-title">Create account</div>
-        <div className="auth-subtitle">Start organizing your life today</div>
+      <div className="authForm" onKeyDown={(e) => e.key === 'Enter' && submit()}>
+        <div className="authTitle">Create account</div>
+        <div className="authSubtitle">Start organizing your life today</div>
 
-        {serverError && <div className="auth-serverError">{serverError}</div>}
+        {serverError ? <div className="authServerError">{serverError}</div> : null}
 
         <Field
           label="Full Name"
@@ -87,22 +53,20 @@ export default function SignUpPage(): JSX.Element {
           onChange={setFullName}
           placeholder="John Doe"
           icon={Icons.user}
-          error={fullNameError}
-          autoComplete="name"
+          error={nErr}
           onBlur={() => setTouched((t) => ({ ...t, fullName: true }))}
+          autoComplete="name"
         />
-
         <Field
           label="Email"
           value={email}
           onChange={setEmail}
           placeholder="you@example.com"
           icon={Icons.mail}
-          error={emailError}
-          autoComplete="email"
+          error={eErr}
           onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          autoComplete="email"
         />
-
         <Field
           label="Password"
           value={password}
@@ -110,22 +74,48 @@ export default function SignUpPage(): JSX.Element {
           placeholder="••••••••"
           type="password"
           icon={Icons.lock}
-          error={passwordError}
-          autoComplete="new-password"
+          error={pErr}
           onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          autoComplete="new-password"
         />
 
-        <PrimaryButton loading={loading} disabled={!canSubmit} onClick={submit}>
+        <PrimaryButton onClick={submit} loading={loading} disabled={!canSubmit}>
           Create account
         </PrimaryButton>
 
         <Divider text="or continue with" />
 
-        <GoogleButton onClick={() => alert('Google OAuth later')} />
+        {/* ✅ Google OAuth (ID token -> backend -> your JWT -> dashboard) */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <GoogleLogin
+            onSuccess={async (cred) => {
+              try {
+                setServerError(null);
 
-        <div className="auth-bottomText">
+                const credential = cred.credential ?? '';
+                if (!credential) {
+                  setServerError('Google sign-in failed: missing credential');
+                  return;
+                }
+
+                const out = await api<{ token: string }>(`/api/auth/google`, {
+                  method: 'POST',
+                  body: JSON.stringify({ credential }),
+                });
+
+                setToken(out.token);
+                nav('/dashboard');
+              } catch (e) {
+                setServerError(e instanceof Error ? e.message : 'Google sign-in failed');
+              }
+            }}
+            onError={() => setServerError('Google sign-in failed')}
+          />
+        </div>
+
+        <div className="authBottomText">
           Already have an account?{' '}
-          <Link to="/auth/sign-in" className="auth-link">
+          <Link to="/auth/sign-in" className="authLink">
             Sign in
           </Link>
         </div>
