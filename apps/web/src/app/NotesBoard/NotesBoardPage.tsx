@@ -103,7 +103,7 @@ function SortableNoteCard({
           <div className="nb-note-sub">{n.body}</div>
         </div>
 
-        <div className="nb-check" title="Drag">
+        <div className="nb-check" title="Dragg">
           <span>⋮⋮</span>
         </div>
       </div>
